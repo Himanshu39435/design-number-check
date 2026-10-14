@@ -52,6 +52,50 @@ function hashOtp(email, otp) {
   return createHash('sha256').update(`${email}:${otp}`).digest();
 }
 
+async function sendOtpWithBrevo({ email, otp, html, text }) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20000);
+
+  try {
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        accept: 'application/json',
+        'api-key': env.brevoApiKey,
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        sender: {
+          email: env.brevoSenderEmail,
+          name: env.brevoSenderName
+        },
+        to: [{ email }],
+        subject: 'Your Himanshu Textile login verification code',
+        textContent: text,
+        htmlContent: html
+      }),
+      signal: controller.signal
+    });
+
+    if (!response.ok) {
+      const details = await response.text();
+      const error = new Error(`Brevo could not send the verification email (${response.status}).`);
+      error.status = 502;
+      error.details = details;
+      throw error;
+    }
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      const timeoutError = new Error('Brevo email service timed out. Please try again.');
+      timeoutError.status = 504;
+      throw timeoutError;
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export async function sendLoginOtp(email) {
   const now = Date.now();
   const lastSent = lastSentAt.get(email);
@@ -62,16 +106,27 @@ export async function sendLoginOtp(email) {
     throw error;
   }
 
-  const transport = getTransport();
-
   const otp = String(randomInt(100000, 1000000));
-  await transport.sendMail({
-    from: env.smtpFrom,
-    to: email,
-    subject: 'Your Himanshu Textile login verification code',
-    text: `Your login verification code is ${otp}. It expires in 5 minutes. If you did not request it, you can ignore this email.`,
-    html: `<p>Your Himanshu Textile login verification code is:</p><p style="font-size:24px;font-weight:bold;letter-spacing:5px">${otp}</p><p>This code expires in 5 minutes. If you did not request it, you can ignore this email.</p>`
-  });
+  const text = `Your login verification code is ${otp}. It expires in 5 minutes. If you did not request it, you can ignore this email.`;
+  const html = `<p>Your Himanshu Textile login verification code is:</p><p style="font-size:24px;font-weight:bold;letter-spacing:5px">${otp}</p><p>This code expires in 5 minutes. If you did not request it, you can ignore this email.</p>`;
+
+  if (env.brevoApiKey) {
+    if (!env.brevoSenderEmail) {
+      const error = new Error('Brevo email is not configured. Set BREVO_SENDER_EMAIL.');
+      error.status = 503;
+      throw error;
+    }
+    await sendOtpWithBrevo({ email, otp, html, text });
+  } else {
+    const transport = getTransport();
+    await transport.sendMail({
+      from: env.smtpFrom,
+      to: email,
+      subject: 'Your Himanshu Textile login verification code',
+      text,
+      html
+    });
+  }
 
   pendingOtps.set(email, {
     hash: hashOtp(email, otp),
