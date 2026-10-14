@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { AlertCircle, CheckCircle2, PlusCircle, Save, SearchCheck } from 'lucide-react';
 import api from '../api/client';
 import PhotoUploader from '../components/PhotoUploader';
 
 export default function AddDesignPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState('');
   const [designNumber, setDesignNumber] = useState('');
@@ -101,12 +102,18 @@ export default function AddDesignPage() {
       setDescription('');
       setDuplicateResult(null);
     } catch (error) {
-      setMessage(
-        error.response?.data?.message ||
+      const duplicate = error.response?.data?.duplicate;
+      if (error.response?.status === 409 && duplicate?.design) {
+        setDuplicateResult(duplicate);
+        setMessage(`This photo is already saved with design number ${duplicate.design.designNumber}.`);
+      } else {
+        setMessage(
+          error.response?.data?.message ||
         (error.request
           ? 'Cannot reach the backend at http://localhost:5000. Start the server in a second terminal, then try again.'
           : error.message || 'Could not save design.')
-      );
+        );
+      }
     } finally {
       setIsSaving(false);
     }
@@ -182,9 +189,9 @@ export default function AddDesignPage() {
                 <p><strong>Date uploaded:</strong> {new Date(duplicateResult.design.createdAt).toLocaleDateString()}</p>
               </div>
               <div className="grid gap-2">
-                <button className="rounded-xl bg-primary-600 px-3 py-2 text-sm font-medium text-white">View Existing Design</button>
-                <button className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700">Cancel Upload</button>
-                <button className="rounded-xl border border-primary-300 bg-primary-50 px-3 py-2 text-sm font-medium text-primary-700">Upload Anyway</button>
+                <button type="button" onClick={() => navigate(`/designs/${duplicateResult.design._id}`)} className="rounded-xl bg-primary-600 px-3 py-2 text-sm font-medium text-white">View Existing Design</button>
+                <button type="button" onClick={() => { setFile(null); setPreview(''); setDuplicateResult(null); setMessage('Upload cancelled.'); }} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700">Cancel Upload</button>
+                <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">This upload is blocked because the photo is already registered. Uploading the same photo again is not allowed.</p>
               </div>
             </div>
           ) : (

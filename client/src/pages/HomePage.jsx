@@ -4,7 +4,7 @@ import { Plus, TrendingUp, CalendarDays, Copy, ArrowRight } from 'lucide-react';
 import api from '../api/client';
 import DesignCard from '../components/DesignCard';
 
-export default function HomePage() {
+export default function HomePage({ user }) {
   const [stats, setStats] = useState({ total: 0, designsAddedToday: 0, designsAddedThisMonth: 0, possibleDuplicateAttempts: 0, recentDesigns: [] });
   const [loading, setLoading] = useState(true);
 
@@ -29,10 +29,12 @@ export default function HomePage() {
           <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary-700">Overview</p>
           <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">Dashboard</h1>
         </div>
-        <Link to="/add-design" className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-3 text-sm font-semibold text-white shadow-soft sm:w-auto">
-          <Plus size={18} />
-          Add New Design
-        </Link>
+        {['admin', 'staff'].includes(user?.role) && (
+          <Link to="/add-design" className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-3 text-sm font-semibold text-white shadow-soft sm:w-auto">
+            <Plus size={18} />
+            Add New Design
+          </Link>
+        )}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">

@@ -11,6 +11,7 @@ import {
   searchByImage,
   getDashboardStats
 } from '../controllers/designController.js';
+import { requireAuth, requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
 const upload = multer({
@@ -24,14 +25,15 @@ const upload = multer({
   }
 });
 
+router.use(requireAuth);
 router.get('/dashboard/stats', getDashboardStats);
 router.get('/', listDesigns);
 router.get('/search', searchByDesignNumber);
 router.get('/:id', getDesignById);
-router.post('/check-duplicate', upload.single('image'), checkDuplicate);
+router.post('/check-duplicate', requireRole('admin', 'staff'), upload.single('image'), checkDuplicate);
 router.post('/search-by-image', upload.single('image'), searchByImage);
-router.post('/', upload.single('image'), createDesign);
-router.put('/:id', upload.single('image'), updateDesign);
-router.delete('/:id', deleteDesign);
+router.post('/', requireRole('admin', 'staff'), upload.single('image'), createDesign);
+router.put('/:id', requireRole('admin', 'staff'), upload.single('image'), updateDesign);
+router.delete('/:id', requireRole('admin'), deleteDesign);
 
 export default router;

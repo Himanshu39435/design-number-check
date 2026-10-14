@@ -3,7 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { Pencil, Trash2, Copy, Download } from 'lucide-react';
 import api from '../api/client';
 
-export default function DesignDetailPage() {
+export default function DesignDetailPage({ user }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [design, setDesign] = useState(null);
@@ -79,10 +79,14 @@ export default function DesignDetailPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-2">
-            <Link to={`/designs/${id}/edit`} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary-600 px-3 py-2 text-sm font-medium text-white"><Pencil size={16} /> Edit</Link>
+            {['admin', 'staff'].includes(user?.role) && (
+              <Link to={`/designs/${id}/edit`} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary-600 px-3 py-2 text-sm font-medium text-white"><Pencil size={16} /> Edit</Link>
+            )}
             <button type="button" onClick={copyDesignNumber} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 px-2 py-2 text-xs font-medium text-slate-700 sm:px-3 sm:text-sm"><Copy size={16} /> Copy Number</button>
             <a href={downloadUrl} download={`${design.designNumber}.jpg`} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 px-2 py-2 text-xs font-medium text-slate-700 sm:px-3 sm:text-sm"><Download size={16} /> Download</a>
-            <button type="button" onClick={deleteDesign} disabled={action === 'delete'} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 disabled:cursor-not-allowed disabled:opacity-60"><Trash2 size={16} /> {action === 'delete' ? 'Deleting...' : 'Delete'}</button>
+            {user?.role === 'admin' && (
+              <button type="button" onClick={deleteDesign} disabled={action === 'delete'} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 disabled:cursor-not-allowed disabled:opacity-60"><Trash2 size={16} /> {action === 'delete' ? 'Deleting...' : 'Delete'}</button>
+            )}
           </div>
           {message && <p role="status" className="rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-700">{message}</p>}
         </div>

@@ -9,8 +9,21 @@ A production-ready full-stack web app for a textile/garment business to manage d
 - Design Number validation and auto-generation workflow
 - Search-by-design-number and search-by-photo flows
 - Dashboard with summary metrics and recent designs
+- Role-based login for Admin, Customer, and Staff
 - Responsive mobile-first UI with desktop sidebar and bottom nav
 - Express + MongoDB backend with Cloudinary image storage
+
+## Role-based Login
+
+Login accepts any valid email address. The server sends a one-time verification code to that email. A new email is automatically created as a `customer`, and an administrator can change its designation to `staff` or `admin` from the user management API:
+
+- `ADMIN_LOGIN_EMAIL`
+- `CUSTOMER_LOGIN_EMAIL` (optional bootstrap account)
+- `STAFF_LOGIN_EMAIL` (optional bootstrap account)
+
+New users are never allowed to choose their own designation. This prevents a user from granting themselves admin access.
+
+Configure SMTP credentials and the three account email addresses in `.env` using `.env.example` as a guide. Codes expire after five minutes and are limited to five verification attempts. OTPs are generated and verified on the server and are never displayed in the client.
 
 ## Tech Stack
 
