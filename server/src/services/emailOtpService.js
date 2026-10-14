@@ -79,6 +79,11 @@ async function sendOtpWithBrevo({ email, otp, html, text }) {
 
     if (!response.ok) {
       const details = await response.text();
+      if (response.status === 401 && details.includes('unrecognised IP')) {
+        const error = new Error('Brevo blocked this server IP. Remove the Brevo authorized-IP restriction or allow the server IP.');
+        error.status = 502;
+        throw error;
+      }
       const error = new Error(`Brevo could not send the verification email (${response.status}).`);
       error.status = 502;
       error.details = details;
